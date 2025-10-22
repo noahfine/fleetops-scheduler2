@@ -36,9 +36,6 @@ var CANCEL_TOKEN = 'CANCEL';          // typing this removes that person from th
 var DESC_FOOTER_MARK = 'Managed by Schedule Matrix';
 var DESC_FOOTER_PREFIX = '\n\n---\n' + DESC_FOOTER_MARK + ' (Sheets sync)\n';
 
-// Outbound debounce to coalesce rapid edits (minutes)
-var OUTBOUND_DEBOUNCE_MINUTES = 0.25; // ~15 seconds
-
 
 // Windowed fallback clear behavior (safe by verification)
 var WINDOW_PULL_VERIFY_WITH_GET_BY_ID = true;         // verify each stale cell via CalendarApp before clearing
@@ -106,13 +103,9 @@ function onEditHandler(e){
    SpreadsheetApp.flush();
 
 
-  r1 = e.range.getRow();
-  r2 = e.range.getLastRow ? e.range.getLastRow() : r1;
-  // Queue-only; coalesce rapid edits and process shortly after
-  queueRowsForSync_(sh.getName(), r1, r2);
-  scheduleOneOff_('processPendingEdits_', OUTBOUND_DEBOUNCE_MINUTES);
-  return;
-  c1 = e.range.getColumn();
+   r1 = e.range.getRow();
+   r2 = e.range.getLastRow ? e.range.getLastRow() : r1;
+   c1 = e.range.getColumn();
    c2 = e.range.getLastColumn ? e.range.getLastColumn() : c1;
 
 
@@ -979,16 +972,6 @@ function queueRowsForSync_(sheetName, r1, r2){
 
 
  props.setProperty('PENDING_ROWS_JSON', JSON.stringify(obj));
-}
-function getPendingRowsSet_(sheetName){
-  var props = PropertiesService.getScriptProperties();
-  var raw = props.getProperty('PENDING_ROWS_JSON') || '{}';
-  var obj = {};
-  try{ obj = JSON.parse(raw) || {}; }catch(_){ obj = {}; }
-  var set = obj[sheetName] || {};
-  var out = {};
-  for (var k in set){ if (set.hasOwnProperty(k)) out[Number(k)] = true; }
-  return out;
 }
 function scheduleOneOff_(handler, minutes){
  var t = ScriptApp.getProjectTriggers();
